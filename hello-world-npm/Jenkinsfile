@@ -1,6 +1,6 @@
-node ('maven'){
+node ('nodejs'){
     stage ('hello, world!'){
         echo "this is a simple hello world to show OCP jenkins integration"
-        sh 'mvn -v'
+        sh 'npm -v'
     }
 }

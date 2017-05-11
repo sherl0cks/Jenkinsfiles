@@ -2,6 +2,7 @@ node ('maven'){
     stage ('hello, world!'){
         echo "This is a simple hello world to show OCP jenkins integration and verify nexus integration"
         git 'https://github.com/rht-labs/automation-api.git'
+        sh 'mvn -v'
         sh 'mvn clean deploy -DaltDeploymentRepository=nexus::default::http://nexus:8081/repository/labs-snapshots'
     }
 }

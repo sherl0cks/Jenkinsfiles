@@ -1,4 +1,4 @@
-node ('maven'){
+node ('mvn-build-pod'){
     stage ('hello, world!'){
         echo "This is a simple hello world to show OCP jenkins integration and verify nexus integration"
         git 'https://github.com/rht-labs/automation-api.git'

@@ -6,23 +6,24 @@ node (''){
     env.OCP_API_SERVER = "${env.OPENSHIFT_API_URL}"
     env.OCP_TOKEN = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
 
-    // these can be updated if need be
-    env.DEV_PROJECT = "dev"
-    env.TEST_PROJECT = "test"
-    env.UAT_PROJECT = "uat"
+    // if the pipeline project name changes, then this needs to be updated too
+    def projectPrefix = "${env.PROJECT_NAME}".replaceAll(/-pipelines/, '')
+    // these can be updated if need be, but it's a nice prescriptive start
+    env.DEV_PROJECT = "${projectPrefix}-dev"
+    env.TEST_PROJECT = "${projectPrefix}-test"
+    env.UAT_PROJECT = "${projectPrefix}-uat"
 }
 
 node('mvn-build-pod') {
 
   stage('SCM Checkout') {
-    // checkout scm
+    // TODO the `checkout scm` command will enable PR builds and all sorts of other fun. we're checking out a static git repo ref for simplicity in this starter
     git 'https://github.com/rht-labs/automation-api.git'
   }
 
   stage('Build App') {
     // TODO - this should dynamically select the repository to use (e.g. snapshots vs releases)
     sh "mvn clean deploy -Dhsql -DaltDeploymentRepository=nexus::default::http://nexus:8081/repository/labs-snapshots"
-
   }
 
   // assumes uber jar is created
@@ -54,4 +55,5 @@ node('mvn-build-pod') {
 
     openshiftVerifyDeployment (apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", depCfg: "${env.APP_NAME}", namespace: "${env.UAT_PROJECT}", verifyReplicaCount: true)
   }
+  
 }

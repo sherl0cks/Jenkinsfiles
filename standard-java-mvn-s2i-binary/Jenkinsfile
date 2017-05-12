@@ -2,7 +2,7 @@
 
 // TODO support master vs PR builds
 node (''){
-    env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?${env.PROJECT_NAME}-?/, '')
+    env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?${env.PROJECT_NAME}-?/, '').replaceAll(/-?pipeline-?/, '')
     env.OCP_API_SERVER = "${env.OPENSHIFT_API_URL}"
     env.OCP_TOKEN = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
 
@@ -55,5 +55,5 @@ node('mvn-build-pod') {
 
     openshiftVerifyDeployment (apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", depCfg: "${env.APP_NAME}", namespace: "${env.UAT_PROJECT}", verifyReplicaCount: true)
   }
-  
+
 }

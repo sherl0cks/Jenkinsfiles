@@ -20,6 +20,14 @@ node('mvn-build-pod') {
     // TODO the `checkout scm` command will enable PR builds and all sorts of other fun. we're checking out a static git repo ref for simplicity in this starter
     git 'https://github.com/rht-labs/automation-api.git'
   }
+    
+  stage('SonarQube analysis') {
+    // requires SonarQube Scanner 2.8+
+    def scannerHome = tool 'SonarQube Scanner 2.8';
+    withSonarQubeEnv('My SonarQube Server') {
+      sh "${scannerHome}/bin/sonar-scanner"
+    }
+  }
 
   stage('Build App') {
     // TODO - this should dynamically select the repository to use (e.g. snapshots vs releases)

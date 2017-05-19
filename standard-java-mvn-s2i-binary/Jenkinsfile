@@ -1,34 +1,48 @@
 #!/usr/bin/groovy
 
-// TODO support master vs PR builds
 node (''){
     env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?${env.PROJECT_NAME}-?/, '').replaceAll(/-?pipeline-?/, '')
     env.OCP_API_SERVER = "${env.OPENSHIFT_API_URL}"
     env.OCP_TOKEN = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
 
-    // if the ci-cd project name changes, then this needs to be updated too
+    // these should align to the projects in the Application Inventory
     def projectPrefix = "${env.PROJECT_NAME}".replaceAll(/-ci-cd/, '')
-    // these can be updated if need be, but it's a nice prescriptive start
     env.DEV_PROJECT = "${projectPrefix}-dev"
     env.TEST_PROJECT = "${projectPrefix}-test"
     env.UAT_PROJECT = "${projectPrefix}-uat"
+
+    env.SOURCE_CONTEXT_DIR = ""
+    // this value is relative to env.SOURCE_CONTEXT_DIR
+    env.UBER_JAR_CONTEXT_DIR = "target/"
+
+    // this value should also include switches like -D and -P
+    env.MVN_COMMAND = "clean deploy"
+
+    // leave these alone unless you really know what you are doing
+    env.MVN_SNAPSHOT_DEPLOYMENT_REPOSITORY = "nexus::default::http://nexus:8081/repository/labs-snapshots"
+    env.MVN_RELEASE_DEPLOYMENT_REPOSITORY = "nexus::default::http://nexus:8081/repository/labs-releases"
 }
 
 node('mvn-build-pod') {
 
   stage('SCM Checkout') {
-    // TODO the `checkout scm` command will enable PR builds and all sorts of other fun. we're checking out a static git repo ref for simplicity in this starter
-    git 'https://github.com/rht-labs/automation-api.git'
+    checkout scm
   }
 
-  stage('Build App') {
-    // TODO - this should dynamically select the repository to use (e.g. snapshots vs releases)
-    sh "mvn clean deploy -Dhsql -DaltDeploymentRepository=nexus::default::http://nexus:8081/repository/labs-snapshots"
-  }
+  dir ("${env.SOURCE_CONTEXT_DIR}") {
+    stage('Build App') {
+      // TODO - introduce a variable here
+      if ( true ){
+        sh "mvn ${env.MVN_COMMAND} -DaltDeploymentRepository=${MVN_SNAPSHOT_DEPLOYMENT_REPOSITORY}"
+      } else {
+        sh "mvn ${env.MVN_COMMAND} -DaltDeploymentRepository=${env.MVN_RELEASE_DEPLOYMENT_REPOSITORY}"
+      }
+    }
 
-  // assumes uber jar is created
-  stage('Build Image') {
-    sh "oc start-build ${env.APP_NAME} --from-dir=target/ --follow"
+    // assumes uber jar is created
+    stage('Build Image') {
+      sh "oc start-build ${env.APP_NAME} --from-dir=${env.UBER_JAR_CONTEXT_DIR} --follow"
+    }
   }
 
   // no user changes should be needed below this point
